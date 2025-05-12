@@ -1,0 +1,50 @@
+<div class="header">
+    <div class="header-left">
+        <p class="title">VisionLOC - CCTV Object Detection Mapping Software</p>
+    </div>
+    <div class="header-right">
+        <button class="btn" (click)="showLogsFn()">
+            {{ showLogs ? 'Hide Logs' : 'Show Logs' }}
+        </button>
+
+        <button class="btn">Logout</button>
+    </div>
+</div>
+
+<div class="row">
+    <div [ngClass]="showLogs ? 'col-10' : 'col-12'">
+        <div #mapContainer id="map" class="map-container"></div>
+
+    </div>
+    <div class="col-2 float-end" *ngIf="showLogs">
+        <h2 class="title">Detected Objects</h2>
+        <ng-container *ngFor="let obj of detectedObjectList">
+            <ng-container *ngTemplateOutlet="detectedObjects; context: {
+            label: obj.label,
+            latitude: obj.latitude,
+            longitude: obj.longitude
+           
+        }">
+            </ng-container>
+        </ng-container>
+    </div>
+</div>
+
+<div class="coordinates ">
+    {{ latitude | number: '1.4-5'}}, {{ longitude | number: '1.4-5'}}
+</div>
+
+<ng-template #detectedObjects let-label="label" let-longitude="longitude" let-latitude="latitude">
+    <div class="row mt-2">
+        <div class="col-2">
+            <img src="assets/icons/pin_drop.svg" class="iconSize" />
+        </div>
+        <div class="col-6">
+            {{ label }} <br>
+            {{ latitude }} , {{ longitude }}
+        </div>
+        <div class="col-4">
+            <mat-slide-toggle> </mat-slide-toggle>
+        </div>
+    </div>
+</ng-template>
