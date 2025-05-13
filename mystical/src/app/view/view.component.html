@@ -3,7 +3,7 @@
         <p class="title">VisionLOC - CCTV Object Detection Mapping Software</p>
     </div>
     <div class="header-right">
-        <button class="btn" (click)="showLogsFn()">
+        <button class="btn" (click)="showLogs = !showLogs">
             {{ showLogs ? 'Hide Logs' : 'Show Logs' }}
         </button>
 
@@ -41,10 +41,10 @@
         </div>
         <div class="col-6">
             {{ label }} <br>
-            {{ latitude }} , {{ longitude }}
+            {{ latitude | number: '1.4-5'}} , {{ longitude | number: '1.4-5'}}
         </div>
         <div class="col-4">
-            <mat-slide-toggle> </mat-slide-toggle>
+            <mat-slide-toggle checked (change)="removeMarker(label,latitude,longitude,$event)"> </mat-slide-toggle>
         </div>
     </div>
 </ng-template>
