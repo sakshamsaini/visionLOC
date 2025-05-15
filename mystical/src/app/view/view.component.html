@@ -3,6 +3,8 @@
         <p class="title">VisionLOC - CCTV Object Detection Mapping Software</p>
     </div>
     <div class="header-right">
+        <button class="btn" (click)="openAddCustomMarkerDialog()">Add Marker</button>
+
         <button class="btn" (click)="showLogs = !showLogs">
             {{ showLogs ? 'Hide Logs' : 'Show Logs' }}
         </button>
@@ -10,6 +12,8 @@
         <button class="btn">Logout</button>
     </div>
 </div>
+
+<!-- <button mat-raised-button color="primary" (click)="openAddCustomMarkerDialog()">Add Marker</button> -->
 
 <div class="row">
     <div [ngClass]="showLogs ? 'col-10' : 'col-12'">
@@ -44,7 +48,8 @@
             {{ latitude | number: '1.4-5'}} , {{ longitude | number: '1.4-5'}}
         </div>
         <div class="col-4">
-            <mat-slide-toggle checked (change)="removeMarker(label,latitude,longitude,$event)"> </mat-slide-toggle>
+            <mat-slide-toggle checked (change)="removeMarker(label,latitude,longitude,$event)" color="primary">
+            </mat-slide-toggle>
         </div>
     </div>
 </ng-template>

@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>Add Marker</h2>
+<div mat-dialog-content>
+    <form #form="ngForm">
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Label</mat-label>
+            <input matInput name="label" [(ngModel)]="data.label" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Latitude</mat-label>
+            <input matInput name="latitude" [(ngModel)]="data.latitude" type="number" required />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Longitude</mat-label>
+            <input matInput name="longitude" [(ngModel)]="data.longitude" type="number" required />
+        </mat-form-field>
+
+        <input type="file" accept="image/*" (change)="onImageSelected($event)" />
+        <div *ngIf="imagePreview" style="margin-top: 10px;">
+            <img [src]="imagePreview" alt="Preview" width="100" />
+        </div>
+
+    </form>
+</div>
+
+<div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button color="primary" (click)="onSave()" [disabled]="!form.valid">Save</button>
+</div>

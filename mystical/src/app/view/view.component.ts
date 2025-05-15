@@ -1,6 +1,8 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ViewController } from '../controller/view.controller';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-custom-marker-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 // import * as L from 'leaflet';
 declare let L: any; // Let the global L from the script tag be used
 
@@ -16,17 +18,19 @@ export class ViewComponent implements OnInit {
 	private satelliteLayer!: L.TileLayer;
 	baseMaps: any;
 
-	isSatelliteView = false;
 	latitude: number = 0;
 	longitude: number = 0;
 
 	showLogs: boolean = false;
 	detectedObjectList: any[] = [];
 	markerMap: Map<number, L.Marker> = new Map(); // Keyed by object ID
+	imageMarkersMap = new Map<L.Marker, L.Marker>();
 
 	@ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
 
-	constructor(private viewController: ViewController,
+	constructor(
+		private viewController: ViewController,
+		private dialog: MatDialog
 	) { }
 
 	ngOnInit(): void {
@@ -57,6 +61,9 @@ export class ViewComponent implements OnInit {
 
 		//7. drawing 
 		this.initDrawControls();
+
+		//8. compass
+		// this.addCompass();
 	}
 
 	private initMap(): void {
@@ -64,7 +71,7 @@ export class ViewComponent implements OnInit {
 		this.map = L.map(this.mapContainer.nativeElement, {
 			center: [27.188984, 78.02575360], // red fort coords
 			zoom: 12,                   // Starting zoom level
-			minZoom: 3,                 // How far out you can zoom
+			minZoom: 8,                 // How far out you can zoom
 			maxZoom: 19,                // How far in you can zoom (make sure tiles exist!)
 			zoomControl: true,
 			attributionControl: true,
@@ -82,9 +89,10 @@ export class ViewComponent implements OnInit {
 	}
 
 	mapLayerFn() {
+		// this.mapLayer = L.tileLayer('http://192.168.1.27/tileserver-php/newMap/{z}/{x}/{y}.png', {
 		this.mapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 19,
-			minZoom: 3,
+			minZoom: 8,
 			attribution: 'Map'
 		});
 	}
@@ -92,7 +100,7 @@ export class ViewComponent implements OnInit {
 	satelliteLayerFn() {
 		this.satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
 			maxZoom: 19,
-			minZoom: 3,
+			minZoom: 8,
 			attribution: 'Map'
 		});
 	}
@@ -111,13 +119,57 @@ export class ViewComponent implements OnInit {
 			// `<b>${obj.label}</b><br>${obj.description}`,
 			`<b>${label}</b><br>`,
 			{ permanent: false, direction: 'top' }
-		).openTooltip();
+			// ).openTooltip();
+		);
+
+		// Add click listener to the marker
+		this.showImageOnMarkerClick(marker);
 	}
+
+	showImageOnMarkerClick(marker: L.Marker) {
+		marker.on('click', () => {
+			const imageUrl = 'assets/images/test.png';
+
+			// Don't recreate if image already exists
+			if (this.imageMarkersMap.has(marker)) return;
+
+			// Shift the image to the left (~0.0007 degrees)
+			const markerLatLng = marker.getLatLng();
+			const imagePosition = L.latLng(markerLatLng.lat, markerLatLng.lng - 0.0007);
+
+			// Create a custom icon with the image
+			const imageIcon = L.divIcon({
+				html: `<img src="${imageUrl}" style="width:600px; height:350px;" />`,
+				iconSize: [300, 100],
+				iconAnchor: [0, 0]
+			});
+
+			// Create a new marker with the image
+			const imageMarker = L.marker(imagePosition, { icon: imageIcon, interactive: true }).addTo(this.map);
+
+			// Store this image marker in map
+			this.imageMarkersMap.set(marker, imageMarker);
+
+			// Add click handler to image itself to remove it
+			imageMarker.on('click', () => {
+				this.map.removeLayer(imageMarker);
+				this.imageMarkersMap.delete(marker);
+			});
+
+		});
+	}
+
 	// Add scale control
 	addControlWithLayers() {
 		L.control.layers(this.baseMaps).addTo(this.map);
 
 		L.control.scale({ imperial: false, metric: true }).addTo(this.map);
+
+		// Add the compass control
+		// L.control.compass().addTo(this.map);
+		this.map.addControl(new L.Control.Compass());
+
+
 	}
 
 	showLatLong() {
@@ -126,17 +178,6 @@ export class ViewComponent implements OnInit {
 			this.latitude = e.latlng.lat;
 			this.longitude = e.latlng.lng;
 		});
-	}
-
-	toggleLayer() {
-		if (this.isSatelliteView) {
-			this.map.removeLayer(this.satelliteLayer);
-			this.map.addLayer(this.mapLayer);
-		} else {
-			this.map.removeLayer(this.mapLayer);
-			this.map.addLayer(this.satelliteLayer);
-		}
-		this.isSatelliteView = !this.isSatelliteView;
 	}
 
 	getDetectedObjectList(): any[] {
@@ -178,7 +219,8 @@ export class ViewComponent implements OnInit {
 				rectangle: false,
 				circle: false,
 				marker: true,
-				circlemarker: false
+				circlemarker: false,
+				path: true
 			},
 			edit: {
 				featureGroup: drawnItems
@@ -191,12 +233,53 @@ export class ViewComponent implements OnInit {
 			const layer = event.layer;
 			drawnItems.addLayer(layer);
 
+
+			console.log(layer)
 			// Check geometry type and get coordinates appropriately
 			if (layer instanceof L.Marker) {
 				console.log('Marker position:', layer.getLatLng());
-			} else if (layer instanceof L.Polyline || layer instanceof L.Polygon) {
-				console.log('Line/Polygon coordinates:', layer.getLatLngs());
-			} else {
+			}
+			else if (layer instanceof L.Polygon) {
+				console.log('Polygon coordinates:', layer.getLatLngs());
+
+				//calculating area
+				const latlngs = layer.getLatLngs()[0];
+				const areaInSqMeters = L.GeometryUtil.geodesicArea(latlngs) / 1000;
+				console.log(`Area covered: ${areaInSqMeters.toFixed(2)} km²`);
+
+				L.popup()
+					.setLatLng([latlngs[0].lat, latlngs[0].lng])
+					.setContent(`Area covered: ${areaInSqMeters.toFixed(2)} km²`)
+					.openOn(this.map);
+			}
+			else if (layer instanceof L.Polyline) {
+				const latlngs = layer.getLatLngs();
+				console.log('Polyline coordinates:', latlngs, latlngs.length);
+
+				//calculating bearing and backbearing
+				for (let i = 0; i < latlngs.length - 1; i++) {
+					const bearing = this.calculateBearing(latlngs[i].lat, latlngs[i].lng, latlngs[i + 1].lat, latlngs[i + 1].lng);
+					const backBearing = (bearing + 180) % 360;
+
+					// Optional: show a popup on each point
+					L.popup()
+						.setLatLng([latlngs[i].lat, latlngs[i].lng])
+						.setContent(`Bearing: ${bearing.toFixed(2)}°<br>Backbearing: ${backBearing.toFixed(2)}°`)
+						.addTo(this.map);
+				}
+				// const latlngs = layer.getLatLngs();
+				// const bearing = this.calculateBearing(latlngs[0].lat, latlngs[0].lng, latlngs[1].lat, latlngs[1].lng);
+				// const backBearing = (bearing + 180) % 360;
+
+				// L.popup()
+				// 	.setLatLng([latlngs[0].lat, latlngs[0].lng])
+				// 	.setContent(`Bearing: ${bearing.toFixed(2)}°<br>Backbearing: ${backBearing.toFixed(2)}°`)
+				// 	.openOn(this.map);
+				// console.log(`Bearing: ${bearing.toFixed(2)}°`);
+				// console.log(`Backbearing: ${backBearing.toFixed(2)}°`);
+
+			}
+			else {
 				console.log('Unknown layer:', layer);
 			}
 		});
@@ -212,6 +295,63 @@ export class ViewComponent implements OnInit {
 				this.map.removeLayer(marker);
 			}
 		}
+	}
+
+	addCompass() {
+		window.addEventListener('deviceorientation', (event) => {
+			console.log('Orientation:', event.alpha, event.beta, event.gamma);
+		});
+
+
+		const compass = new L.Control.Compass({
+			autoActive: true,
+			showDigit: true,
+		});
+		this.map.addControl(compass);
+	}
+
+	addCustomMarker(data: any) {
+		const leaftletIcon = L.icon({
+			iconUrl: 'assets/icons/compass-icon.png',
+			iconSize: [35, 50],
+			iconAnchor: [12, 41],
+			popupAnchor: [-3, -76],
+		});
+
+		const marker = L.marker([data.latitude, data.longitude], { icon: leaftletIcon }).addTo(this.map);
+		this.addTooltipToMarker(data.label, marker);
+	}
+
+	openAddCustomMarkerDialog(): void {
+		const dialogRef = this.dialog.open(AddCustomMarkerDialogComponent, {
+			width: '500px',
+			data: { label: '', latitude: '', longitude: '' }
+		});
+
+		dialogRef.afterClosed().subscribe(result => {
+			if (result) {
+				console.log('Dialog result:', result);
+				// handle the result data
+				this.addCustomMarker(result);
+			}
+		});
+	}
+
+	calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+		const toRad = (deg: number) => deg * Math.PI / 180;
+		const toDeg = (rad: number) => rad * 180 / Math.PI;
+
+		const φ1 = toRad(lat1);
+		const φ2 = toRad(lat2);
+		const Δλ = toRad(lon2 - lon1);
+
+		const y = Math.sin(Δλ) * Math.cos(φ2);
+		const x = Math.cos(φ1) * Math.sin(φ2) -
+			Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+
+		const θ = Math.atan2(y, x);
+
+		return (toDeg(θ) + 360) % 360; // Normalize to 0–360
 	}
 
 	ngOnDestroy(): void {
