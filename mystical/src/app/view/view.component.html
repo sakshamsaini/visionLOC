@@ -23,14 +23,16 @@
     <div class="col-2 float-end" *ngIf="showLogs">
         <h2 class="title">Detected Objects</h2>
         <ng-container *ngFor="let obj of detectedObjectList">
-            <ng-container *ngTemplateOutlet="detectedObjects; context: {
-            label: obj.label,
-            latitude: obj.latitude,
-            longitude: obj.longitude
-           
-        }">
+            <ng-container *ngIf="obj.type != 'camera' ">
+                <ng-container *ngTemplateOutlet="detectedObjects; context: {
+        label: obj.label,
+        latitude: obj.latitude,
+        longitude: obj.longitude
+      }">
+                </ng-container>
             </ng-container>
         </ng-container>
+
     </div>
 </div>
 
@@ -45,7 +47,7 @@
         </div>
         <div class="col-6">
             {{ label }} <br>
-            {{ latitude | number: '1.4-5'}} , {{ longitude | number: '1.4-5'}}
+            {{ latitude | number: '1.6-7'}} , {{ longitude | number: '1.6-7'}}
         </div>
         <div class="col-4">
             <mat-slide-toggle checked (change)="removeMarker(label,latitude,longitude,$event)" color="primary">

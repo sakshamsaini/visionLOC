@@ -105,9 +105,29 @@ export class ViewComponent implements OnInit {
 		});
 	}
 
-	addMarkers(detectedObjectList: { latitude: number, longitude: number, label: string, description: string }[]): void {
+	addMarkers(detectedObjectList: { latitude: number, longitude: number, label: string, type: string }[]): void {
 		detectedObjectList.forEach(obj => {
-			const marker = L.marker([obj.latitude, obj.longitude]).addTo(this.map);
+			// const marker = L.marker([obj.latitude, obj.longitude]).addTo(this.map);
+			// this.addTooltipToMarker(obj.label, marker);
+			let iconType = 'assets/icons/location.png';
+			if (obj.type === 'person') {
+				iconType = 'assets/icons/person.png';
+			} else if (obj.type == 'vehicle') {
+				iconType = 'assets/icons/vehicle_car.png';
+			} else if (obj.type == 'animal') {
+				iconType = 'assets/icons/animal.png';
+			} else if (obj.type == 'camera') {
+				iconType = 'assets/icons/camera.png';
+			}
+
+			const leaftletIcon = L.icon({
+				iconUrl: iconType,
+				iconSize: [33, 35],
+				iconAnchor: [12, 41],
+				// popupAnchor: [-3, -76],
+			});
+
+			const marker = L.marker([obj.latitude, obj.longitude], { icon: leaftletIcon }).addTo(this.map);
 			this.addTooltipToMarker(obj.label, marker);
 
 			this.markerMap.set(obj.latitude, marker);
@@ -166,10 +186,7 @@ export class ViewComponent implements OnInit {
 		L.control.scale({ imperial: false, metric: true }).addTo(this.map);
 
 		// Add the compass control
-		// L.control.compass().addTo(this.map);
 		this.map.addControl(new L.Control.Compass());
-
-
 	}
 
 	showLatLong() {
@@ -216,9 +233,9 @@ export class ViewComponent implements OnInit {
 			draw: {
 				polygon: true,
 				polyline: true,
-				rectangle: false,
-				circle: false,
-				marker: true,
+				rectangle: true,
+				circle: true,
+				marker: false,
 				circlemarker: false,
 				path: true
 			},
@@ -302,7 +319,6 @@ export class ViewComponent implements OnInit {
 			console.log('Orientation:', event.alpha, event.beta, event.gamma);
 		});
 
-
 		const compass = new L.Control.Compass({
 			autoActive: true,
 			showDigit: true,
@@ -311,15 +327,25 @@ export class ViewComponent implements OnInit {
 	}
 
 	addCustomMarker(data: any) {
+		let icon = 'assets/icons/location.png';
+		const storedImage = localStorage.getItem('customMarkerIcon_'+ data.label);
+		if (storedImage) {
+			icon = storedImage;
+		}
+
 		const leaftletIcon = L.icon({
-			iconUrl: 'assets/icons/compass-icon.png',
-			iconSize: [35, 50],
+			iconUrl: icon,
+			iconSize: [33, 35],
 			iconAnchor: [12, 41],
-			popupAnchor: [-3, -76],
+			// popupAnchor: [-3, -76],
 		});
 
 		const marker = L.marker([data.latitude, data.longitude], { icon: leaftletIcon }).addTo(this.map);
-		this.addTooltipToMarker(data.label, marker);
+		marker.bindTooltip(
+			// `<b>${obj.label}</b><br>${obj.description}`,
+			`<b>${data.label}</b><br>`,
+			{ permanent: false, direction: 'top' }
+		);
 	}
 
 	openAddCustomMarkerDialog(): void {
@@ -331,7 +357,12 @@ export class ViewComponent implements OnInit {
 		dialogRef.afterClosed().subscribe(result => {
 			if (result) {
 				console.log('Dialog result:', result);
-				// handle the result data
+				// Save Base64 to localStorage (optional)
+				if (result.imageBase64 != null) {
+					localStorage.setItem('customMarkerIcon_'+ result.label, result.imageBase64);
+				}
+
+				// You can also keep it in a local variable or state array
 				this.addCustomMarker(result);
 			}
 		});
