@@ -38,7 +38,8 @@ export class AddCustomMarkerDialogComponent implements OnInit {
 	onSave(): void {
 		this.dialogRef.close({
 			...this.data,
-			image: this.selectedImage
+			image: this.selectedImage,
+			imageBase64: this.imagePreview // this is the base64 string
 		});
 	}
 

@@ -107,18 +107,7 @@ export class ViewComponent implements OnInit {
 
 	addMarkers(detectedObjectList: { latitude: number, longitude: number, label: string, type: string }[]): void {
 		detectedObjectList.forEach(obj => {
-			// const marker = L.marker([obj.latitude, obj.longitude]).addTo(this.map);
-			// this.addTooltipToMarker(obj.label, marker);
-			let iconType = 'assets/icons/location.png';
-			if (obj.type === 'person') {
-				iconType = 'assets/icons/person.png';
-			} else if (obj.type == 'vehicle') {
-				iconType = 'assets/icons/vehicle_car.png';
-			} else if (obj.type == 'animal') {
-				iconType = 'assets/icons/animal.png';
-			} else if (obj.type == 'camera') {
-				iconType = 'assets/icons/camera.png';
-			}
+			const { iconType, imageUrl } = this.getIconAndImageByType(obj.type);
 
 			const leaftletIcon = L.icon({
 				iconUrl: iconType,
@@ -130,8 +119,41 @@ export class ViewComponent implements OnInit {
 			const marker = L.marker([obj.latitude, obj.longitude], { icon: leaftletIcon }).addTo(this.map);
 			this.addTooltipToMarker(obj.label, marker);
 
+			if (obj.type != 'camera') {
+				this.showImageOnMarkerClick(marker, imageUrl);
+			}
+
 			this.markerMap.set(obj.latitude, marker);
 		});
+	}
+
+	getIconAndImageByType(type: string): { iconType: string; imageUrl: string } {
+		let iconType = '';
+		let imageUrl = '';
+
+		switch (type) {
+			case 'person':
+				iconType = 'assets/icons/person.png';
+				imageUrl = 'assets/images/1.jpeg';
+				break;
+			case 'vehicle':
+				iconType = 'assets/icons/vehicle_car.png';
+				imageUrl = 'assets/images/2.jpeg';
+				break;
+			case 'animal':
+				iconType = 'assets/icons/animal.png';
+				imageUrl = 'assets/images/3.jpeg';
+				break;
+			case 'camera':
+				iconType = 'assets/icons/camera.png';
+				break;
+			default:
+				iconType = 'assets/icons/location.png';
+				imageUrl = 'assets/images/4.jpeg';
+				break;
+		}
+
+		return { iconType, imageUrl };
 	}
 
 	addTooltipToMarker(label: string, marker: L.Marker) {
@@ -141,14 +163,11 @@ export class ViewComponent implements OnInit {
 			{ permanent: false, direction: 'top' }
 			// ).openTooltip();
 		);
-
-		// Add click listener to the marker
-		this.showImageOnMarkerClick(marker);
 	}
 
-	showImageOnMarkerClick(marker: L.Marker) {
+	showImageOnMarkerClick(marker: L.Marker, imageUrl: string) {
 		marker.on('click', () => {
-			const imageUrl = 'assets/images/test.png';
+			// const imageUrl = 'assets/images/1.jpeg';
 
 			// Don't recreate if image already exists
 			if (this.imageMarkersMap.has(marker)) return;
@@ -327,25 +346,23 @@ export class ViewComponent implements OnInit {
 	}
 
 	addCustomMarker(data: any) {
-		let icon = 'assets/icons/location.png';
-		const storedImage = localStorage.getItem('customMarkerIcon_'+ data.label);
-		if (storedImage) {
-			icon = storedImage;
+		let leaftletIcon = '';
+		if (data.image == null) {
+			leaftletIcon = L.icon({
+				iconUrl: 'assets/icons/location.png',
+				iconSize: [33, 35],
+				iconAnchor: [12, 41],
+			});
+		} else {
+			leaftletIcon = L.icon({
+				iconUrl: localStorage.getItem('customMarkerIcon_' + data.label),
+				iconSize: [23, 25],
+				iconAnchor: [12, 41],
+			});
 		}
 
-		const leaftletIcon = L.icon({
-			iconUrl: icon,
-			iconSize: [33, 35],
-			iconAnchor: [12, 41],
-			// popupAnchor: [-3, -76],
-		});
-
 		const marker = L.marker([data.latitude, data.longitude], { icon: leaftletIcon }).addTo(this.map);
-		marker.bindTooltip(
-			// `<b>${obj.label}</b><br>${obj.description}`,
-			`<b>${data.label}</b><br>`,
-			{ permanent: false, direction: 'top' }
-		);
+		this.addTooltipToMarker(data.label, marker);
 	}
 
 	openAddCustomMarkerDialog(): void {
@@ -359,7 +376,7 @@ export class ViewComponent implements OnInit {
 				console.log('Dialog result:', result);
 				// Save Base64 to localStorage (optional)
 				if (result.imageBase64 != null) {
-					localStorage.setItem('customMarkerIcon_'+ result.label, result.imageBase64);
+					localStorage.setItem('customMarkerIcon_' + result.label, result.imageBase64);
 				}
 
 				// You can also keep it in a local variable or state array
