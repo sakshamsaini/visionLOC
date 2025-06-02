@@ -10,11 +10,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-custom-marker-dialog.component';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
+import { AddLabelDialogComponent } from '../add-label-dialog/add-label-dialog.component';
 
 @NgModule({
 	declarations: [
 		ViewComponent,
-		AddCustomMarkerDialogComponent
+		AddCustomMarkerDialogComponent,
+		AddLabelDialogComponent
 	],
 	imports: [
 		CommonModule,

@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Add Label</h2>
+<div mat-dialog-content>
+    <form #form="ngForm">
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Label</mat-label>
+            <input matInput name="label" [(ngModel)]="data.label" required />
+        </mat-form-field>
+    </form>
+</div>
+
+<div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button color="primary" (click)="onSave()" [disabled]="!form.valid">Save</button>
+</div>

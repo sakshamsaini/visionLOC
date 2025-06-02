@@ -3,6 +3,7 @@ import { ViewController } from '../controller/view.controller';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-custom-marker-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { AddLabelDialogComponent } from '../add-label-dialog/add-label-dialog.component';
 // import * as L from 'leaflet';
 declare let L: any; // Let the global L from the script tag be used
 
@@ -22,7 +23,11 @@ export class ViewComponent implements OnInit {
 	longitude: number = 0;
 
 	showLogs: boolean = false;
+	showMarkers: boolean = false;
 	detectedObjectList: any[] = [];
+	customMarkerList: any[] = [];
+	drawingList: any[] = [];
+
 	markerMap: Map<number, L.Marker> = new Map(); // Keyed by object ID
 	imageMarkersMap = new Map<L.Marker, L.Marker>();
 
@@ -38,32 +43,22 @@ export class ViewComponent implements OnInit {
 	}
 
 	ngAfterViewInit(): void {
-		// 1. initialize map layers
-		this.initMapLayer();
+		this.initMapLayer(); 	// 1. initialize map layers
 
-		//2.  Add Layer Control
-		this.baseMaps = {
+		this.baseMaps = { 	//2.  Add Layer Control
 			'Map View': this.mapLayer,
 			'Satellite View': this.satelliteLayer
 		};
 
-		//3. initialize map
-		this.initMap();
-
-		//4. add pop-ups
-		this.addMarkers(this.detectedObjectList);
-
-		//5. add layer controls
-		this.addControlWithLayers();
-
-		//6. add event listeners
-		this.showLatLong();
-
-		//7. drawing 
-		this.initDrawControls();
-
-		//8. compass
-		// this.addCompass();
+		this.initMap(); 	//3. initialize map
+		this.addDetectedObjectMarkers(this.detectedObjectList); 	//4. add pop-ups
+		this.addControlWithLayers(); 	//5. add layer controls
+		this.showLatLong();	 	//6. add event listeners
+		this.initDrawControls(); 	//7. drawing 
+		// this.addCompass()	;//8. compass
+		this.dragAndDropCustomMarker();
+		this.getCustomMarkerList();
+		this.getDrawingList();
 	}
 
 	private initMap(): void {
@@ -81,39 +76,36 @@ export class ViewComponent implements OnInit {
 		this.mapLayer.addTo(this.map);
 	}
 
-	// Offline tile layer using local MBTiles or pre-downloaded tiles served from assets
-	// Assuming tiles are stored in assets/tiles/{z}/{x}/{y}.png
 	initMapLayer() {
 		this.mapLayerFn();
 		this.satelliteLayerFn();
 	}
 
 	mapLayerFn() {
-		// this.mapLayer = L.tileLayer('http://192.168.1.27/tileserver-php/newMap/{z}/{x}/{y}.png', {
+		// this.mapLayer = L.tileLayer('http://192.168.1.6/tileserver-php/newMap/{z}/{x}/{y}.png', {
 		this.mapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 19,
 			minZoom: 8,
-			attribution: 'Map'
+			attribution: 'Map View'
 		});
 	}
 
 	satelliteLayerFn() {
+		// this.satelliteLayer = L.tileLayer('http://localhost/tileserver-php/newMap/{z}/{x}/{y}.png', {
 		this.satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
 			maxZoom: 19,
 			minZoom: 8,
-			attribution: 'Map'
+			attribution: 'Satellite View'
 		});
 	}
 
-	addMarkers(detectedObjectList: { latitude: number, longitude: number, label: string, type: string }[]): void {
+	addDetectedObjectMarkers(detectedObjectList: { latitude: number, longitude: number, label: string, type: string }[]): void {
 		detectedObjectList.forEach(obj => {
 			const { iconType, imageUrl } = this.getIconAndImageByType(obj.type);
-
 			const leaftletIcon = L.icon({
 				iconUrl: iconType,
 				iconSize: [33, 35],
 				iconAnchor: [12, 41],
-				// popupAnchor: [-3, -76],
 			});
 
 			const marker = L.marker([obj.latitude, obj.longitude], { icon: leaftletIcon }).addTo(this.map);
@@ -122,7 +114,6 @@ export class ViewComponent implements OnInit {
 			if (obj.type != 'camera') {
 				this.showImageOnMarkerClick(marker, imageUrl);
 			}
-
 			this.markerMap.set(obj.latitude, marker);
 		});
 	}
@@ -158,17 +149,13 @@ export class ViewComponent implements OnInit {
 
 	addTooltipToMarker(label: string, marker: L.Marker) {
 		marker.bindTooltip(
-			// `<b>${obj.label}</b><br>${obj.description}`,
 			`<b>${label}</b><br>`,
 			{ permanent: false, direction: 'top' }
-			// ).openTooltip();
 		);
 	}
 
 	showImageOnMarkerClick(marker: L.Marker, imageUrl: string) {
 		marker.on('click', () => {
-			// const imageUrl = 'assets/images/1.jpeg';
-
 			// Don't recreate if image already exists
 			if (this.imageMarkersMap.has(marker)) return;
 
@@ -203,13 +190,9 @@ export class ViewComponent implements OnInit {
 		L.control.layers(this.baseMaps).addTo(this.map);
 
 		L.control.scale({ imperial: false, metric: true }).addTo(this.map);
-
-		// Add the compass control
-		this.map.addControl(new L.Control.Compass());
 	}
 
 	showLatLong() {
-		// Listen to mousemove event to update coordinates
 		this.map.on('mousemove', (e: L.LeafletMouseEvent) => {
 			this.latitude = e.latlng.lat;
 			this.longitude = e.latlng.lng;
@@ -223,14 +206,13 @@ export class ViewComponent implements OnInit {
 
 				// Wait until map is initialized
 				if (this.map) {
-					this.addMarkers(this.detectedObjectList);
-
+					this.addDetectedObjectMarkers(this.detectedObjectList);
 					this.map.setView([this.detectedObjectList[0].latitude, this.detectedObjectList[0].longitude], 10);
 				} else {
 					// If map isn't ready yet, poll until it is
 					const interval = setInterval(() => {
 						if (this.map) {
-							this.addMarkers(this.detectedObjectList);
+							this.addDetectedObjectMarkers(this.detectedObjectList);
 							clearInterval(interval);
 						}
 					}, 100);
@@ -242,7 +224,6 @@ export class ViewComponent implements OnInit {
 		});
 		return this.detectedObjectList;
 	}
-
 
 	initDrawControls(): void {
 		const drawnItems = new L.FeatureGroup();
@@ -262,69 +243,103 @@ export class ViewComponent implements OnInit {
 				featureGroup: drawnItems
 			}
 		});
-
 		this.map.addControl(drawControl);
 
 		this.map.on('draw:created', (event: any) => {
 			const layer = event.layer;
+			console.log(layer);
+
 			drawnItems.addLayer(layer);
+			let popupContent: string = '';
+			let popupLatitude: number = 0;
+			let popupLongitude: number = 0;
+			let jsonObj = {};
 
-
-			console.log(layer)
 			// Check geometry type and get coordinates appropriately
-			if (layer instanceof L.Marker) {
-				console.log('Marker position:', layer.getLatLng());
-			}
-			else if (layer instanceof L.Polygon) {
+			if (layer instanceof L.Polygon) {
 				console.log('Polygon coordinates:', layer.getLatLngs());
-
 				//calculating area
 				const latlngs = layer.getLatLngs()[0];
 				const areaInSqMeters = L.GeometryUtil.geodesicArea(latlngs) / 1000;
-				console.log(`Area covered: ${areaInSqMeters.toFixed(2)} km²`);
 
-				L.popup()
-					.setLatLng([latlngs[0].lat, latlngs[0].lng])
-					.setContent(`Area covered: ${areaInSqMeters.toFixed(2)} km²`)
-					.openOn(this.map);
+				popupLatitude = latlngs[0].lat;
+				popupLongitude = latlngs[0].lng;
+				popupContent = `Area covered: ${areaInSqMeters.toFixed(2)} km²`;
+
+				jsonObj = this.createJsonForDrawings("POLYGON", '', latlngs, areaInSqMeters, null, null);
 			}
 			else if (layer instanceof L.Polyline) {
 				const latlngs = layer.getLatLngs();
 				console.log('Polyline coordinates:', latlngs, latlngs.length);
 
 				//calculating bearing and backbearing
+				let bearingAndBackBearingList = [];
 				for (let i = 0; i < latlngs.length - 1; i++) {
 					const bearing = this.calculateBearing(latlngs[i].lat, latlngs[i].lng, latlngs[i + 1].lat, latlngs[i + 1].lng);
 					const backBearing = (bearing + 180) % 360;
+					bearingAndBackBearingList.push({ "bearing": bearing, "backBearing": backBearing });
 
-					// Optional: show a popup on each point
-					L.popup()
-						.setLatLng([latlngs[i].lat, latlngs[i].lng])
-						.setContent(`Bearing: ${bearing.toFixed(2)}°<br>Backbearing: ${backBearing.toFixed(2)}°`)
-						.addTo(this.map);
+					popupLatitude = latlngs[i].lat;
+					popupLongitude = latlngs[i].lng;
+					popupContent = `Bearing: ${bearing.toFixed(2)}°<br>Backbearing: ${backBearing.toFixed(2)}°`;
 				}
-				// const latlngs = layer.getLatLngs();
-				// const bearing = this.calculateBearing(latlngs[0].lat, latlngs[0].lng, latlngs[1].lat, latlngs[1].lng);
-				// const backBearing = (bearing + 180) % 360;
 
-				// L.popup()
-				// 	.setLatLng([latlngs[0].lat, latlngs[0].lng])
-				// 	.setContent(`Bearing: ${bearing.toFixed(2)}°<br>Backbearing: ${backBearing.toFixed(2)}°`)
-				// 	.openOn(this.map);
-				// console.log(`Bearing: ${bearing.toFixed(2)}°`);
-				// console.log(`Backbearing: ${backBearing.toFixed(2)}°`);
+				jsonObj = this.createJsonForDrawings("POLYLINE", '', latlngs, null, bearingAndBackBearingList, null);
+			}
+			else if (layer instanceof L.Circle) {
+				const latlngs = layer._latlng;
+				console.log('Circle coordinates:', layer._latlng);
+				// calculating area
+				const radius = layer.getRadius(); // in meters
+				const area = (Math.PI * radius * radius) / 1000;
 
+				popupLatitude = latlngs.lat;
+				popupLongitude = latlngs.lng;
+				popupContent = `Area covered: ${area.toFixed(2)} km²`;
+
+				jsonObj = this.createJsonForDrawings("CIRCLE", '', [latlngs], area, null, radius);
 			}
 			else {
 				console.log('Unknown layer:', layer);
 			}
+
+			if (popupLatitude != 0 && popupLongitude != 0) {
+				this.showPopup(popupLatitude, popupLongitude, popupContent);
+
+				//showing popup on click
+				layer.on('click', (e: L.LeafletMouseEvent) => {
+					this.showPopup(popupLatitude, popupLongitude, popupContent);
+				});
+
+				this.openAddlabelDialog(jsonObj);
+			}
 		});
 	}
 
-	removeMarker(label: string, latitude: number, longitude: number, event: MatSlideToggleChange) {
+	createJsonForDrawings(shapeName: string, label: string, latlng: any[], area: number | null,
+		bearAndbackBearing: any[] | null, radius: number | null) {
+		let drawingJson = {
+			"shapeName": shapeName,
+			"label": label,
+			"latlng": latlng,
+			"area": area,
+			"bearAndbackBearing": bearAndbackBearing,
+			"radius": radius
+		}
+		return drawingJson;
+	}
+
+	showPopup(latitude: number, longitude: number, content: string) {
+		L.popup()
+			.setLatLng([latitude, longitude])
+			.setContent(content)
+			.addTo(this.map);
+	}
+
+	removeMarker(label: string, latitude: number, event: MatSlideToggleChange | null) {
 		const marker = this.markerMap.get(latitude);
 		if (marker) {
-			if (event.checked) {
+			if (event != null && event.checked) {
 				this.map.addLayer(marker);
 				this.addTooltipToMarker(label, marker);
 			} else {
@@ -333,56 +348,18 @@ export class ViewComponent implements OnInit {
 		}
 	}
 
-	addCompass() {
-		window.addEventListener('deviceorientation', (event) => {
-			console.log('Orientation:', event.alpha, event.beta, event.gamma);
-		});
-
-		const compass = new L.Control.Compass({
-			autoActive: true,
-			showDigit: true,
-		});
-		this.map.addControl(compass);
-	}
-
-	addCustomMarker(data: any) {
-		let leaftletIcon = '';
-		if (data.image == null) {
-			leaftletIcon = L.icon({
-				iconUrl: 'assets/icons/location.png',
-				iconSize: [33, 35],
-				iconAnchor: [12, 41],
-			});
-		} else {
-			leaftletIcon = L.icon({
-				iconUrl: localStorage.getItem('customMarkerIcon_' + data.label),
+	addCustomMarker(data: any, marker: L.Marker) {
+		if (data.image != null) {
+			let newIcon = L.icon({
+				iconUrl: data.imageBase64,
 				iconSize: [23, 25],
 				iconAnchor: [12, 41],
 			});
+			marker.setIcon(newIcon);
 		}
 
-		const marker = L.marker([data.latitude, data.longitude], { icon: leaftletIcon }).addTo(this.map);
+		marker.unbindPopup();
 		this.addTooltipToMarker(data.label, marker);
-	}
-
-	openAddCustomMarkerDialog(): void {
-		const dialogRef = this.dialog.open(AddCustomMarkerDialogComponent, {
-			width: '500px',
-			data: { label: '', latitude: '', longitude: '' }
-		});
-
-		dialogRef.afterClosed().subscribe(result => {
-			if (result) {
-				console.log('Dialog result:', result);
-				// Save Base64 to localStorage (optional)
-				if (result.imageBase64 != null) {
-					localStorage.setItem('customMarkerIcon_' + result.label, result.imageBase64);
-				}
-
-				// You can also keep it in a local variable or state array
-				this.addCustomMarker(result);
-			}
-		});
 	}
 
 	calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -402,9 +379,199 @@ export class ViewComponent implements OnInit {
 		return (toDeg(θ) + 360) % 360; // Normalize to 0–360
 	}
 
+	onDragStart(event: DragEvent): void {
+		event.dataTransfer?.setData('text/plain', 'button'); // Optional
+	}
+
+	dragAndDropCustomMarker(): void {
+		const mapEl = this.map.getContainer();
+
+		mapEl.addEventListener('dragover', (event) => {
+			event.preventDefault(); // Important: allows drop
+		});
+
+		mapEl.addEventListener('drop', (event: DragEvent) => {
+			event.preventDefault();
+			const rect = mapEl.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+
+			const latlng = this.map.containerPointToLatLng([x, y]);
+			let _latitude = latlng.lat;
+			let _longitude = latlng.lng
+			let popupContent = `Dropped at:<br><b>Lat:</b> ${_latitude.toFixed(5)}<br><b>Lng:</b> ${_longitude.toFixed(5)}`;
+
+			const marker = L.marker([_latitude, _longitude]).addTo(this.map);
+			this.showCustomMarkerPopup(_latitude, _longitude, popupContent);
+			this.openAddCustomMarkerDialog(_latitude, _longitude, marker);
+
+			//on mouse events
+			// marker.on('mouseover', (e: L.LeafletMouseEvent) => {
+			// 	this.showCustomMarkerPopup(_latitude, _longitude, popupContent);
+			// });
+
+			marker.on('click', (e: L.LeafletMouseEvent) => {
+				this.openAddCustomMarkerDialog(_latitude, _longitude, marker);
+			});
+		});
+	}
+
+	showCustomMarkerPopup(latitude: number, longitude: number, content: string) {
+		L.popup({
+			offset: L.point(0, -20), // shift slightly above
+		})
+			.setLatLng([latitude, longitude])
+			.setContent(content)
+			.addTo(this.map);
+	}
+
+	getCustomMarkerList() {
+		this.viewController.getMarkerList().subscribe({
+			next: (res) => {
+				this.customMarkerList = res;
+
+				// Wait until map is initialized
+				if (this.map) {
+					this.addCustomMarkersOnMap(this.customMarkerList);
+				} else {
+					// If map isn't ready yet, poll until it is
+					const interval = setInterval(() => {
+						if (this.map) {
+							this.addCustomMarkersOnMap(this.customMarkerList);
+							clearInterval(interval);
+						}
+					}, 100);
+				}
+			},
+			error: (err) => {
+				console.error('Error in getCustomMarkerList:', err);
+			}
+		});
+		return this.customMarkerList;
+	}
+
+	getDrawingList() {
+		this.viewController.getDrawingList().subscribe({
+			next: (res) => {
+				this.drawingList = res;
+
+				// Wait until map is initialized
+				if (this.map) {
+					this.addDrawingOnMap(this.drawingList);
+				} else {
+					// If map isn't ready yet, poll until it is
+					const interval = setInterval(() => {
+						if (this.map) {
+							this.addDrawingOnMap(this.drawingList);
+							clearInterval(interval);
+						}
+					}, 100);
+				}
+			},
+			error: (err) => {
+				console.error('Error in getDrawingList:', err);
+			}
+		});
+		return this.drawingList;
+	}
+
+	addDrawingOnMap(drawingList: any[]): void {
+		drawingList.forEach(drawing => {
+			if (drawing.shapeName == 'POLYGON') {
+				const polygonCoords = drawing.latlng.map((p: any) => [p.lat, p.lng]);
+				const polygon = L.polygon(polygonCoords, {
+					weight: 3,
+					fillOpacity: 0.4
+				}).addTo(this.map);
+
+				polygon.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`);
+
+			} else if (drawing.shapeName == 'POLYLINE') {
+				const polylineCoords = drawing.latlng.map((p: any) => [p.lat, p.lng]);
+
+				const polyline = L.polyline(polylineCoords, {
+				}).addTo(this.map);
+
+				drawing.bearAndbackBearing.forEach((b: any, index: number) => {
+					const point1 = polylineCoords[index];
+					const point2 = polylineCoords[index + 1];
+
+					if (point1 && point2) {
+						const midLat = (point1[0] + point2[0]) / 2;
+						const midLng = (point1[1] + point2[1]) / 2;
+
+						const popupMarker = L.circleMarker([midLat, midLng], {
+							radius: 5,
+							// color: 'transparent',
+							fillOpacity: 0
+						}).addTo(this.map);
+
+						popupMarker.bindPopup(`<b>${drawing.label}</b><br> Bearing: ${b.bearing}°<br>Back: ${b.backBearing}°`);
+					}
+				});
+
+			} else if (drawing.shapeName == 'CIRCLE') {
+				const firstPoint = drawing.latlng[0];
+				const circle = L.circle([firstPoint.lat, firstPoint.lng], {
+					radius: drawing.radius,
+					fillOpacity: 0.2
+				}).addTo(this.map);
+
+				circle.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`);
+			}
+		});
+	}
+
+	addCustomMarkersOnMap(customMarkerList: any[]): void {
+		customMarkerList.forEach(obj => {
+			let marker = L.marker();
+			if (obj.image != null) {
+				const leaftletIcon = L.icon({
+					iconUrl: `data:${obj.imageType};base64,${obj.image}`,
+					iconSize: [33, 35],
+					iconAnchor: [12, 41],
+				});
+				marker = L.marker([obj.latitude, obj.longitude], { icon: leaftletIcon }).addTo(this.map);
+			} else {
+				marker = L.marker([obj.latitude, obj.longitude]).addTo(this.map);
+			}
+
+			this.addTooltipToMarker(obj.label, marker);
+			this.markerMap.set(obj.latitude, marker);
+		});
+	}
+
+	openAddCustomMarkerDialog(_latitude: number, _longitude: number, marker: L.Marker): void {
+		const dialogRef = this.dialog.open(AddCustomMarkerDialogComponent, {
+			width: '500px',
+			data: { label: '', latitude: _latitude, longitude: _longitude }
+		});
+
+		dialogRef.afterClosed().subscribe(result => {
+			if (result) {
+				console.log('Dialog result:', result);
+				this.addCustomMarker(result, marker);
+			}
+		});
+	}
+
+	openAddlabelDialog(jsonObj: any): void {
+		const dialogRef = this.dialog.open(AddLabelDialogComponent, {
+			width: '500px',
+			data: { label: '', jsonObj: jsonObj }
+		});
+
+		dialogRef.afterClosed().subscribe(result => {
+			if (result) {
+				console.log('Dialog result:', result);
+			}
+		});
+	}
+
 	ngOnDestroy(): void {
 		if (this.map) {
 			this.map.remove();
 		}
 	}
+
 }

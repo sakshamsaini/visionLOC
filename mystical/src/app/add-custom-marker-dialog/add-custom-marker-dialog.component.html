@@ -20,6 +20,7 @@
         <div *ngIf="imagePreview" style="margin-top: 10px;">
             <img [src]="imagePreview" alt="Preview" width="100" />
         </div>
+        <p *ngIf="imageError" class="error">{{ imageError }}</p>
 
     </form>
 </div>

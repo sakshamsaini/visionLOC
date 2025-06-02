@@ -18,4 +18,28 @@ export class ViewController {
         return this.http.get<any[]>(`${environment.VISIONLOC_API_URL}detected-objects`);
     }
 
+    postMarker(formData: any) {
+        return this.http.post(`${environment.VISIONLOC_API_URL}marker`, formData);
+    }
+
+    getMarkerList(): Observable<any[]> {
+        return this.http.get<any[]>(`${environment.VISIONLOC_API_URL}markers`);
+    }
+
+    deleteMarker(id: number) {
+        return this.http.delete(`${environment.VISIONLOC_API_URL}marker/${id}`);
+    }
+
+    postDrawing(json: any) {
+        return this.http.post(`${environment.VISIONLOC_API_URL}drawing`, json);
+    }
+
+    getDrawingList(): Observable<any[]> {
+        return this.http.get<any[]>(`${environment.VISIONLOC_API_URL}drawings`);
+    }
+
+    deleteDrawing(id: number) {
+        return this.http.delete(`${environment.VISIONLOC_API_URL}drawing/${id}`);
+    }
+
 }

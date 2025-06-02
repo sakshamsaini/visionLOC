@@ -3,23 +3,29 @@
         <p class="title">VisionLOC - CCTV Object Detection Mapping Software</p>
     </div>
     <div class="header-right">
-        <button class="btn" (click)="openAddCustomMarkerDialog()">Add Marker</button>
+        <!-- <button class="btn" (click)="openAddCustomMarkerDialog()">Add Marker</button> -->
+        <button class="btn" draggable="true" (dragstart)="onDragStart($event)">
+            Add Marker
+        </button>
 
         <button class="btn" (click)="showLogs = !showLogs">
             {{ showLogs ? 'Hide Logs' : 'Show Logs' }}
+        </button>
+
+        <button class="btn" (click)="showMarkers = !showMarkers">
+            Show Markers
         </button>
 
         <button class="btn">Logout</button>
     </div>
 </div>
 
-<!-- <button mat-raised-button color="primary" (click)="openAddCustomMarkerDialog()">Add Marker</button> -->
-
 <div class="row">
-    <div [ngClass]="showLogs ? 'col-10' : 'col-12'">
+    <div [ngClass]="showLogs || showMarkers ? 'col-10' : 'col-12'">
         <div #mapContainer id="map" class="map-container"></div>
-
     </div>
+
+    <!-- Show logs -->
     <div class="col-2 float-end" *ngIf="showLogs">
         <h2 class="title">Detected Objects</h2>
         <ng-container *ngFor="let obj of detectedObjectList">
@@ -32,7 +38,19 @@
                 </ng-container>
             </ng-container>
         </ng-container>
+    </div>
 
+    <!-- Show Markers -->
+    <div class="col-2 float-end" *ngIf="showMarkers">
+        <h2 class="title">Markers</h2>
+        <ng-container *ngFor="let obj of customMarkerList">
+            <ng-container *ngTemplateOutlet="detectedObjects; context: {
+        label: obj.label,
+        latitude: obj.latitude,
+        longitude: obj.longitude
+      }">
+            </ng-container>
+        </ng-container>
     </div>
 </div>
 
@@ -50,7 +68,7 @@
             {{ latitude | number: '1.6-7'}} , {{ longitude | number: '1.6-7'}}
         </div>
         <div class="col-4">
-            <mat-slide-toggle checked (change)="removeMarker(label,latitude,longitude,$event)" color="primary">
+            <mat-slide-toggle checked (change)="removeMarker(label,latitude,$event)" color="primary">
             </mat-slide-toggle>
         </div>
     </div>
