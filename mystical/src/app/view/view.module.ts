@@ -11,12 +11,14 @@ import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
 import { AddLabelDialogComponent } from '../add-label-dialog/add-label-dialog.component';
+import { DeleteDrawingDialogComponent } from '../delete-drawing-dialog/delete-drawing-dialog.component';
 
 @NgModule({
 	declarations: [
 		ViewComponent,
 		AddCustomMarkerDialogComponent,
-		AddLabelDialogComponent
+		AddLabelDialogComponent,
+		DeleteDrawingDialogComponent
 	],
 	imports: [
 		CommonModule,

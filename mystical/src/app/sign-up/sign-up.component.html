@@ -1,0 +1,45 @@
+<div class="full-page-container">
+
+    <mat-card class="login-card">
+        <mat-card-title class="login-title">Sign up</mat-card-title>
+        <mat-card-content>
+            <form [formGroup]="signUpForm" (ngSubmit)="onSubmit()">
+
+                <mat-form-field appearance="fill" class="full-width">
+                    <mat-label class="fw-bold">Full name</mat-label>
+                    <input matInput formControlName="fullName" type="text" required />
+
+                    <mat-error
+                        *ngIf="signUpForm.get('fullName')?.hasError('required') && signUpForm.get('fullName')?.touched">
+                        Name is required.
+                    </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="full-width">
+                    <mat-label class="fw-bold">Email</mat-label>
+                    <input matInput formControlName="email" type="email" required />
+
+                    <mat-error *ngIf="signUpForm.get('email')?.hasError('required') && signUpForm.get('email')?.touched">
+                        Email is required.
+                    </mat-error>
+                    <mat-error *ngIf="signUpForm.get('email')?.hasError('email')">
+                        Please enter a valid email.
+                    </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="full-width">
+                    <mat-label class="fw-bold">Password</mat-label>
+                    <input matInput formControlName="password" type="text" required />
+
+                    <mat-error
+                        *ngIf="signUpForm.get('password')?.hasError('required') && signUpForm.get('password')?.touched">
+                        Password is required.
+                    </mat-error>
+                </mat-form-field>
+
+                <button type="submit" [disabled]="signUpForm.invalid">Sign up</button>
+            </form>
+
+        </mat-card-content>
+    </mat-card>
+</div>

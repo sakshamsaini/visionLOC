@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>
+    <span class="fw-bold">
+        Delete {{ data.shapeName }}
+    </span>
+</h2>
+<div mat-dialog-content>
+    Are you sure you want to delete
+    <span class="fw-bold">
+        {{ data.label }}
+    </span>
+    ?
+</div>
+
+<div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button color="warn" (click)="deleteDrawing()">Delete</button>
+</div>

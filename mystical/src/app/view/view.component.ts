@@ -4,6 +4,9 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-custom-marker-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { AddLabelDialogComponent } from '../add-label-dialog/add-label-dialog.component';
+import { DeleteDrawingDialogComponent } from '../delete-drawing-dialog/delete-drawing-dialog.component';
+import { Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 // import * as L from 'leaflet';
 declare let L: any; // Let the global L from the script tag be used
 
@@ -24,6 +27,7 @@ export class ViewComponent implements OnInit {
 
 	showLogs: boolean = false;
 	showMarkers: boolean = false;
+	showDrawings: boolean = false;
 	detectedObjectList: any[] = [];
 	customMarkerList: any[] = [];
 	drawingList: any[] = [];
@@ -35,7 +39,9 @@ export class ViewComponent implements OnInit {
 
 	constructor(
 		private viewController: ViewController,
-		private dialog: MatDialog
+		private dialog: MatDialog,
+		private router: Router,
+		private toastr: ToastrService,
 	) { }
 
 	ngOnInit(): void {
@@ -99,9 +105,9 @@ export class ViewComponent implements OnInit {
 		});
 	}
 
-	addDetectedObjectMarkers(detectedObjectList: { latitude: number, longitude: number, label: string, type: string }[]): void {
+	addDetectedObjectMarkers(detectedObjectList: any[]): void {
 		detectedObjectList.forEach(obj => {
-			const { iconType, imageUrl } = this.getIconAndImageByType(obj.type);
+			const iconType = this.getIconAndImageByType(obj.type);
 			const leaftletIcon = L.icon({
 				iconUrl: iconType,
 				iconSize: [33, 35],
@@ -112,39 +118,33 @@ export class ViewComponent implements OnInit {
 			this.addTooltipToMarker(obj.label, marker);
 
 			if (obj.type != 'camera') {
-				this.showImageOnMarkerClick(marker, imageUrl);
+				this.showImageOnMarkerClick(marker, obj.imageType, obj.imageBase64);
 			}
 			this.markerMap.set(obj.latitude, marker);
 		});
 	}
 
-	getIconAndImageByType(type: string): { iconType: string; imageUrl: string } {
+	getIconAndImageByType(type: string) {
 		let iconType = '';
-		let imageUrl = '';
 
 		switch (type) {
 			case 'person':
 				iconType = 'assets/icons/person.png';
-				imageUrl = 'assets/images/1.jpeg';
 				break;
 			case 'vehicle':
 				iconType = 'assets/icons/vehicle_car.png';
-				imageUrl = 'assets/images/2.jpeg';
 				break;
 			case 'animal':
 				iconType = 'assets/icons/animal.png';
-				imageUrl = 'assets/images/3.jpeg';
 				break;
 			case 'camera':
 				iconType = 'assets/icons/camera.png';
 				break;
 			default:
 				iconType = 'assets/icons/location.png';
-				imageUrl = 'assets/images/4.jpeg';
 				break;
 		}
-
-		return { iconType, imageUrl };
+		return iconType;
 	}
 
 	addTooltipToMarker(label: string, marker: L.Marker) {
@@ -154,7 +154,7 @@ export class ViewComponent implements OnInit {
 		);
 	}
 
-	showImageOnMarkerClick(marker: L.Marker, imageUrl: string) {
+	showImageOnMarkerClick(marker: L.Marker, imageType: string, imageBase64: string) {
 		marker.on('click', () => {
 			// Don't recreate if image already exists
 			if (this.imageMarkersMap.has(marker)) return;
@@ -164,16 +164,14 @@ export class ViewComponent implements OnInit {
 			const imagePosition = L.latLng(markerLatLng.lat, markerLatLng.lng - 0.0007);
 
 			// Create a custom icon with the image
+			const base64Src = `data:${imageType};base64,${imageBase64}`;
 			const imageIcon = L.divIcon({
-				html: `<img src="${imageUrl}" style="width:600px; height:350px;" />`,
+				html: `<img src="${base64Src}" style="width:600px; height:350px;" />`,
 				iconSize: [300, 100],
 				iconAnchor: [0, 0]
 			});
 
-			// Create a new marker with the image
 			const imageMarker = L.marker(imagePosition, { icon: imageIcon, interactive: true }).addTo(this.map);
-
-			// Store this image marker in map
 			this.imageMarkersMap.set(marker, imageMarker);
 
 			// Add click handler to image itself to remove it
@@ -181,7 +179,6 @@ export class ViewComponent implements OnInit {
 				this.map.removeLayer(imageMarker);
 				this.imageMarkersMap.delete(marker);
 			});
-
 		});
 	}
 
@@ -220,6 +217,7 @@ export class ViewComponent implements OnInit {
 			},
 			error: (err) => {
 				console.error('Error in getDetectedObjectList:', err);
+				this.toastr.error('Something went wrong');
 			}
 		});
 		return this.detectedObjectList;
@@ -336,7 +334,7 @@ export class ViewComponent implements OnInit {
 			.addTo(this.map);
 	}
 
-	removeMarker(label: string, latitude: number, event: MatSlideToggleChange | null) {
+	removeMarkerFromMap(label: string, latitude: number, event: MatSlideToggleChange | null) {
 		const marker = this.markerMap.get(latitude);
 		if (marker) {
 			if (event != null && event.checked) {
@@ -346,6 +344,19 @@ export class ViewComponent implements OnInit {
 				this.map.removeLayer(marker);
 			}
 		}
+	}
+
+	deleteCustomMarker(id: number) {
+		this.viewController.deleteMarker(id).subscribe({
+			next: (res) => {
+				this.toastr.success(res['message']);
+				this.getCustomMarkerList();
+			},
+			error: (err) => {
+				console.error('Error in deleteCustomMarker:', err);
+				this.toastr.error('Something went wrong');
+			}
+		});
 	}
 
 	addCustomMarker(data: any, marker: L.Marker) {
@@ -445,6 +456,7 @@ export class ViewComponent implements OnInit {
 			},
 			error: (err) => {
 				console.error('Error in getCustomMarkerList:', err);
+				this.toastr.error('Something went wrong');
 			}
 		});
 		return this.customMarkerList;
@@ -470,23 +482,48 @@ export class ViewComponent implements OnInit {
 			},
 			error: (err) => {
 				console.error('Error in getDrawingList:', err);
+				this.toastr.error('Something went wrong');
 			}
 		});
 		return this.drawingList;
 	}
 
+	deleteDrawing(id: number) {
+		this.viewController.deleteDrawing(id).subscribe({
+			next: (res) => {
+				this.getDrawingList();
+			},
+			error: (err) => {
+				console.error('Error in deleteDrawing:', err);
+				this.toastr.error('Something went wrong');
+			}
+		});
+	}
+
 	addDrawingOnMap(drawingList: any[]): void {
 		drawingList.forEach(drawing => {
-			if (drawing.shapeName == 'POLYGON') {
+			const shapeName = drawing.shapeName;
+			const label = drawing.label;
+			const id = drawing.id;
+			if (shapeName == 'POLYGON') {
 				const polygonCoords = drawing.latlng.map((p: any) => [p.lat, p.lng]);
 				const polygon = L.polygon(polygonCoords, {
 					weight: 3,
 					fillOpacity: 0.4
 				}).addTo(this.map);
 
-				polygon.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`);
+				polygon.on('mousemove', (e: L.LeafletMouseEvent) => {
+					polygon.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`).openPopup(e.latlng);
+				});
 
-			} else if (drawing.shapeName == 'POLYLINE') {
+				polygon.on('click', (e: L.LeafletMouseEvent) => {
+					this.openDeleteDrawingDialog(id, shapeName, label, polygon);
+				});
+
+				// polygon.remove();  // Removes it from the map
+
+
+			} else if (shapeName == 'POLYLINE') {
 				const polylineCoords = drawing.latlng.map((p: any) => [p.lat, p.lng]);
 
 				const polyline = L.polyline(polylineCoords, {
@@ -506,18 +543,30 @@ export class ViewComponent implements OnInit {
 							fillOpacity: 0
 						}).addTo(this.map);
 
-						popupMarker.bindPopup(`<b>${drawing.label}</b><br> Bearing: ${b.bearing}°<br>Back: ${b.backBearing}°`);
+						popupMarker.on('mousemove', (e: L.LeafletMouseEvent) => {
+							popupMarker.bindPopup(`<b>${drawing.label}</b><br> Bearing: ${b.bearing}°<br>Back: ${b.backBearing}°`).openPopup(e.latlng);
+						});
 					}
 				});
 
-			} else if (drawing.shapeName == 'CIRCLE') {
+				polyline.on('click', (e: L.LeafletMouseEvent) => {
+					this.openDeleteDrawingDialog(id, shapeName, label, polyline);
+				});
+
+			} else if (shapeName == 'CIRCLE') {
 				const firstPoint = drawing.latlng[0];
 				const circle = L.circle([firstPoint.lat, firstPoint.lng], {
 					radius: drawing.radius,
 					fillOpacity: 0.2
 				}).addTo(this.map);
 
-				circle.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`);
+				circle.on('mousemove', (e: L.LeafletMouseEvent) => {
+					circle.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`).openPopup(e.latlng);
+				});
+
+				circle.on('click', (e: L.LeafletMouseEvent) => {
+					this.openDeleteDrawingDialog(id, shapeName, label, circle);
+				});
 			}
 		});
 	}
@@ -568,10 +617,54 @@ export class ViewComponent implements OnInit {
 		});
 	}
 
+	openDeleteDrawingDialog(id: number, shapeName: string, label: string, layer: any): void {
+		const dialogRef = this.dialog.open(DeleteDrawingDialogComponent, {
+			width: '500px',
+			data: { id: id, shapeName: shapeName, label: label }
+		});
+
+		dialogRef.afterClosed().subscribe(result => {
+			if (result) {
+				console.log('Dialog result:', result);
+				if (layer instanceof L.Polygon || layer instanceof L.Polyline || layer instanceof L.Circle) {
+					this.map.removeLayer(layer);
+				}
+			}
+		});
+	}
+
+	changeFlagValues(flag: string) {
+		if (flag === 'SHOW_LOGS') {
+			this.showLogs = !this.showLogs;
+			if (this.showLogs) {
+				this.showMarkers = false;
+				this.showDrawings = false;
+			}
+		} else if (flag === 'SHOW_MARKERS') {
+			this.showMarkers = !this.showMarkers;
+			if (this.showMarkers) {
+				this.showLogs = false;
+				this.showDrawings = false;
+			}
+		}
+		else if (flag === 'SHOW_DRAWINGS') {
+			this.showDrawings = !this.showDrawings;
+			if (this.showDrawings) {
+				this.showLogs = false;
+				this.showMarkers = false;
+			}
+		}
+	}
+
 	ngOnDestroy(): void {
 		if (this.map) {
 			this.map.remove();
 		}
+	}
+
+	logoutFn() {
+		localStorage.removeItem('signUpID');
+		this.router.navigate(['/login']);
 	}
 
 }

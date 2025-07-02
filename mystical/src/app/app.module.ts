@@ -7,32 +7,42 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { HttpClientModule } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
+import { AuthInterceptor } from './auth.interceptor';
+import { ToastrModule } from 'ngx-toastr';
 
 
 @NgModule({
-  declarations: [
-    AppComponent],
+	declarations: [
+		AppComponent,
+	],
 
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    MatButtonModule,
-    MatSlideToggleModule,
-    NgbModule,
-    HttpClientModule,
-    FormsModule,
-    BrowserAnimationsModule,
-    MatDialogModule,
-    MatInputModule
-  ],
-  providers: [
-  ],
-  bootstrap: [AppComponent]
+	imports: [
+		BrowserModule,
+		AppRoutingModule,
+		MatButtonModule,
+		MatSlideToggleModule,
+		NgbModule,
+		HttpClientModule,
+		FormsModule,
+		BrowserAnimationsModule,
+		MatDialogModule,
+		MatInputModule,
+		ReactiveFormsModule,
+		ToastrModule.forRoot(),
+	],
+	providers: [
+		{
+			provide: HTTP_INTERCEPTORS,
+			useClass: AuthInterceptor,
+			multi: true
+		}
+	],
+	bootstrap: [AppComponent]
 })
 
 export class AppModule { }

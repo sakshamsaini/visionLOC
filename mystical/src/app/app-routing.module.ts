@@ -1,16 +1,25 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { ViewComponent } from './view/view.component';
+import { AuthGuard } from './auth.guard';
 
 const routes: Routes = [
-  {
-    path: '',
-    loadChildren: () => import('./view/view.module').then(m => m.ViewModule),
-  }
+	{
+		path: 'view-map',
+		loadChildren: () => import('./view/view.module').then(m => m.ViewModule),
+		canActivate: [AuthGuard]
+	},
+	{
+		path: 'login',
+		loadChildren: () => import('./login/login.module').then(m => m.LoginModule),
+	},
+	{
+		path: 'sign-up',
+		loadChildren: () => import('./sign-up/sign-up.module').then(m => m.SignUpModule),
+	}
 ]
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+	imports: [RouterModule.forRoot(routes)],
+	exports: [RouterModule]
 })
 export class AppRoutingModule { }

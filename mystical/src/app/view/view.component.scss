@@ -46,6 +46,18 @@
     margin-top: 5px;
 }
 
+.customMarkerIcon {
+    width: 20px;
+    height: 25px;
+    margin-top: 5px;
+}
+
+.deleteIcon {
+    font-size: 35px;
+    margin-left: 10px;
+    margin-bottom: 7px
+}
+
 .coordinates {
     position: absolute;
     bottom: 5px;
@@ -54,4 +66,7 @@
     font-weight: bold;
 }
 
-
+.dropdown-menu .dropdown-item:hover {
+    background-color: #e6f0ff;
+    color: #0056b3;
+}

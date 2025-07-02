@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ViewController } from '../controller/view.controller';
+import { ToastrService } from 'ngx-toastr';
 @Component({
 	selector: 'app-add-custom-marker-dialog',
 	templateUrl: './add-custom-marker-dialog.component.html',
@@ -17,6 +18,7 @@ export class AddCustomMarkerDialogComponent implements OnInit {
 		@Inject(MAT_DIALOG_DATA) public data: {
 			label: string; latitude: number; longitude: number
 		},
+		private toastr: ToastrService,
 		private viewController: ViewController
 	) { }
 
@@ -59,6 +61,7 @@ export class AddCustomMarkerDialogComponent implements OnInit {
 			},
 				error => {
 					console.log('error in onSave() -', error);
+					this.toastr.error('Something went wrong');
 				});
 
 		this.dialogRef.close({

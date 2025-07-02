@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { ViewController } from '../controller/view.controller';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
 	selector: 'app-add-label-dialog',
@@ -14,6 +15,7 @@ export class AddLabelDialogComponent implements OnInit {
 		@Inject(MAT_DIALOG_DATA) public data: {
 			label: string; jsonObj: any;
 		},
+		private toastr: ToastrService,
 		private viewController: ViewController
 	) { }
 
@@ -24,9 +26,11 @@ export class AddLabelDialogComponent implements OnInit {
 		this.data.jsonObj.label = this.data.label;
 		this.viewController.postDrawing(this.data.jsonObj)
 			.subscribe((res) => {
+				this.toastr.success(res['message']);
 			},
 				error => {
 					console.log('error in onSave() -', error);
+					this.toastr.error('Something went wrong');
 				});
 
 		this.dialogRef.close({
