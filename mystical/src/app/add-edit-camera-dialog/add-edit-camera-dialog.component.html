@@ -1,0 +1,65 @@
+<h2 mat-dialog-title class="fw-bold">{{data.id ==null ? 'Add' : 'Update'}} Camera</h2>
+<div mat-dialog-content>
+    <form [formGroup]="form">
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Label</mat-label>
+            <input matInput formControlName="label" type="text" required />
+
+            <mat-error *ngIf="form.get('label')?.hasError('required') && form.get('label')?.touched">
+                Label is required.
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Latitude</mat-label>
+            <input matInput formControlName="latitude" type="number" required />
+
+            <mat-error *ngIf="form.get('latitude')?.hasError('required') && form.get('latitude')?.touched">
+                Latitude is required.
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Longitude</mat-label>
+            <input matInput formControlName="longitude" type="number" required />
+
+            <mat-error *ngIf="form.get('longitude')?.hasError('required') && form.get('longitude')?.touched">
+                Longitude is required.
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Fov Deg</mat-label>
+            <input matInput formControlName="fovDeg" type="number" required />
+
+            <mat-error *ngIf="form.get('fovDeg')?.hasError('required') && form.get('fovDeg')?.touched">
+                Fov Deg is required.
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Focal length in px</mat-label>
+            <input matInput formControlName="focalLengthPx" type="number" required />
+
+            <mat-error *ngIf="form.get('focalLengthPx')?.hasError('required') && form.get('focalLengthPx')?.touched">
+                Focal length is required.
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Camera Live Link</mat-label>
+            <input matInput formControlName="cameraLink" type="text" required />
+
+            <mat-error *ngIf="form.get('cameraLink')?.hasError('required') && form.get('cameraLink')?.touched">
+                Focal length is required.
+            </mat-error>
+        </mat-form-field>
+
+    </form>
+</div>
+
+<div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button class="btn" (click)="onSave()" [disabled]="!form.valid">Save</button>
+</div>

@@ -2,6 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { ViewController } from '../controller/view.controller';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { CameraController } from '../controller/camera.controller';
 
 @Component({
 	selector: 'app-delete-drawing-dialog',
@@ -15,18 +16,43 @@ export class DeleteDrawingDialogComponent implements OnInit {
 			id: number; shapeName: string; label: string;
 		},
 		private toastr: ToastrService,
-		private viewController: ViewController) { }
+		private viewController: ViewController,
+		private cameraController: CameraController) { }
 
 	ngOnInit(): void {
+	}
+
+	onDelete() {
+		if (this.data.shapeName == 'Camera') {
+			this.deleteCamera();
+		} else {
+			this.deleteDrawing();
+		}
 	}
 
 	deleteDrawing(): void {
 		this.viewController.deleteDrawing(this.data.id).subscribe({
 			next: (res) => {
-				this.toastr.success(res['message']);
+				this.toastr.success(res.message);
 			},
 			error: (err) => {
 				console.error('Error in deleteDrawing:', err);
+				this.toastr.error('Something went wrong');
+			}
+		});
+
+		this.dialogRef.close({
+			...this.data,
+		});
+	}
+
+	deleteCamera(): void {
+		this.cameraController.deleteCamera(this.data.id).subscribe({
+			next: (res) => {
+				this.toastr.success(res.message);
+			},
+			error: (err) => {
+				console.error('Error in deleteCamera:', err);
 				this.toastr.error('Something went wrong');
 			}
 		});

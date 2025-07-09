@@ -1,0 +1,75 @@
+.btn {
+    font-weight: 600;
+    color: white;
+    font-size: medium;
+    margin-right: 10px;
+}
+
+// .btn {
+//     background-color: #00966c !important;
+//     font-weight: 600;
+//     color: white;
+//     font-size: medium;
+//     margin-right: 10px;
+//     border: none;
+//     outline: none;
+//     box-shadow: none;
+// }
+
+// /* Remove outline and shadow on focus and active */
+// .btn:focus,
+// .btn:active {
+//     outline: none !important;
+//     box-shadow: none !important;
+//     background-color: #00966c !important;
+//     /* to avoid color flash on click */
+// }
+
+.cardOverwrite {
+    box-shadow: none !important;
+    border-radius: 16px !important;
+}
+
+.headerContainer {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 20px 0px 20px;
+    display: flex;
+    align-items: center;
+    // border-bottom: 1px solid #e0e0e0;
+}
+
+.headerLeftContainer {
+    flex: 1;
+}
+
+.headerRightContainer {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.pageTitle {
+    // text-transform: capitalize;
+    font-size: 22px;
+    font-weight: 520;
+}
+
+.icon {
+    font-size: 35px;
+    margin-left: 15px;
+    margin-bottom: 7px
+}
+
+table {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.tableHeader {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    font-size: medium;
+}

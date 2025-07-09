@@ -1,5 +1,6 @@
 <div class="header">
     <div class="header-left">
+        <img src="assets/icons/arrow_back.svg" class="back" (click)="goBack()" />
         <p class="title">VisionLOC - CCTV Object Detection Mapping Software</p>
     </div>
     <div class="header-right">
@@ -8,7 +9,8 @@
         </button>
 
         <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" style="background-color: #008CBA;" type="button"
+                data-bs-toggle="dropdown">
                 Show Actions
             </button>
             <ul class="dropdown-menu">
@@ -18,7 +20,8 @@
             </ul>
         </div>
 
-        <button class="btn" (click)="logoutFn()">Logout</button>
+        <button class="btn" style="background-color: #b23b3b;" (click)="logoutFn()">Logout</button>
+        <!-- <img src="assets/icons/logout.png" style="margin-top: auto; width: 40px; height: auto;" /> -->
     </div>
 </div>
 
@@ -99,7 +102,7 @@
         <div class="col-4">
             <mat-slide-toggle checked (change)="removeMarkerFromMap(label,latitude,$event)" color="primary">
             </mat-slide-toggle>
-            <span *ngIf="id != null" (click)="deleteCustomMarker(id)">
+            <span *ngIf="id != null" (click)="deleteCustomMarker(id,latitude)">
                 <img src="assets/icons/delete.svg" class="deleteIcon" />
             </span>
         </div>

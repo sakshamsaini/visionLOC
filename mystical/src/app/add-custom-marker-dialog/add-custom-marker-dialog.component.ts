@@ -58,17 +58,21 @@ export class AddCustomMarkerDialogComponent implements OnInit {
 
 		this.viewController.postMarker(formData)
 			.subscribe((res) => {
+				this.toastr.success(res.message);
+
+				this.dialogRef.close({
+					...this.data,
+					image: this.selectedImage,
+					imageBase64: this.imagePreview, // this is the base64 string
+					id: res.response.id
+				});
 			},
 				error => {
 					console.log('error in onSave() -', error);
 					this.toastr.error('Something went wrong');
 				});
 
-		this.dialogRef.close({
-			...this.data,
-			image: this.selectedImage,
-			imageBase64: this.imagePreview, // this is the base64 string
-		});
+
 	}
 
 	toFormData(): FormData {

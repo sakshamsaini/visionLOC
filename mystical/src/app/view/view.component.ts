@@ -4,9 +4,9 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-custom-marker-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { AddLabelDialogComponent } from '../add-label-dialog/add-label-dialog.component';
-import { DeleteDrawingDialogComponent } from '../delete-drawing-dialog/delete-drawing-dialog.component';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { Location } from '@angular/common';
 // import * as L from 'leaflet';
 declare let L: any; // Let the global L from the script tag be used
 
@@ -34,14 +34,16 @@ export class ViewComponent implements OnInit {
 
 	markerMap: Map<number, L.Marker> = new Map(); // Keyed by object ID
 	imageMarkersMap = new Map<L.Marker, L.Marker>();
+	drawingMap: Map<number, any> = new Map();
 
 	@ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
 
 	constructor(
-		private viewController: ViewController,
 		private dialog: MatDialog,
 		private router: Router,
 		private toastr: ToastrService,
+		private location: Location,
+		private viewController: ViewController,
 	) { }
 
 	ngOnInit(): void {
@@ -63,8 +65,8 @@ export class ViewComponent implements OnInit {
 		this.initDrawControls(); 	//7. drawing 
 		// this.addCompass()	;//8. compass
 		this.dragAndDropCustomMarker();
-		this.getCustomMarkerList();
-		this.getDrawingList();
+		this.getCustomMarkerListAndAddToMap();
+		this.getDrawingListAndAddToMap();
 	}
 
 	private initMap(): void {
@@ -264,6 +266,7 @@ export class ViewComponent implements OnInit {
 				popupLongitude = latlngs[0].lng;
 				popupContent = `Area covered: ${areaInSqMeters.toFixed(2)} km²`;
 
+				this.showPopup(popupLatitude, popupLongitude, popupContent);
 				jsonObj = this.createJsonForDrawings("POLYGON", '', latlngs, areaInSqMeters, null, null);
 			}
 			else if (layer instanceof L.Polyline) {
@@ -280,8 +283,9 @@ export class ViewComponent implements OnInit {
 					popupLatitude = latlngs[i].lat;
 					popupLongitude = latlngs[i].lng;
 					popupContent = `Bearing: ${bearing.toFixed(2)}°<br>Backbearing: ${backBearing.toFixed(2)}°`;
-				}
 
+					this.showPopup(popupLatitude, popupLongitude, popupContent);
+				}
 				jsonObj = this.createJsonForDrawings("POLYLINE", '', latlngs, null, bearingAndBackBearingList, null);
 			}
 			else if (layer instanceof L.Circle) {
@@ -295,6 +299,7 @@ export class ViewComponent implements OnInit {
 				popupLongitude = latlngs.lng;
 				popupContent = `Area covered: ${area.toFixed(2)} km²`;
 
+				this.showPopup(popupLatitude, popupLongitude, popupContent);
 				jsonObj = this.createJsonForDrawings("CIRCLE", '', [latlngs], area, null, radius);
 			}
 			else {
@@ -302,14 +307,12 @@ export class ViewComponent implements OnInit {
 			}
 
 			if (popupLatitude != 0 && popupLongitude != 0) {
-				this.showPopup(popupLatitude, popupLongitude, popupContent);
-
 				//showing popup on click
 				layer.on('click', (e: L.LeafletMouseEvent) => {
 					this.showPopup(popupLatitude, popupLongitude, popupContent);
 				});
 
-				this.openAddlabelDialog(jsonObj);
+				this.openAddlabelDialog(jsonObj, layer);
 			}
 		});
 	}
@@ -334,6 +337,21 @@ export class ViewComponent implements OnInit {
 			.addTo(this.map);
 	}
 
+	openAddlabelDialog(jsonObj: any, layer: any): void {
+		const dialogRef = this.dialog.open(AddLabelDialogComponent, {
+			width: '500px',
+			data: { label: '', jsonObj: jsonObj }
+		});
+
+		dialogRef.afterClosed().subscribe(result => {
+			if (result) {
+				console.log('Dialog result:', result);
+				this.drawingMap.set(result.id, layer);
+				this.getDrawingList();
+			}
+		});
+	}
+
 	removeMarkerFromMap(label: string, latitude: number, event: MatSlideToggleChange | null) {
 		const marker = this.markerMap.get(latitude);
 		if (marker) {
@@ -346,10 +364,16 @@ export class ViewComponent implements OnInit {
 		}
 	}
 
-	deleteCustomMarker(id: number) {
+	deleteCustomMarker(id: number, latitude: number) {
 		this.viewController.deleteMarker(id).subscribe({
 			next: (res) => {
-				this.toastr.success(res['message']);
+				this.toastr.success(res.message);
+				//remove marker from map
+				const marker = this.markerMap.get(latitude);
+				if (marker) {
+					this.map.removeLayer(marker);
+				}
+
 				this.getCustomMarkerList();
 			},
 			error: (err) => {
@@ -410,33 +434,20 @@ export class ViewComponent implements OnInit {
 			const latlng = this.map.containerPointToLatLng([x, y]);
 			let _latitude = latlng.lat;
 			let _longitude = latlng.lng
-			let popupContent = `Dropped at:<br><b>Lat:</b> ${_latitude.toFixed(5)}<br><b>Lng:</b> ${_longitude.toFixed(5)}`;
 
 			const marker = L.marker([_latitude, _longitude]).addTo(this.map);
-			this.showCustomMarkerPopup(_latitude, _longitude, popupContent);
+			let popupContent = `Dropped at:<br><b>Lat:</b> ${_latitude.toFixed(5)}<br><b>Lng:</b> ${_longitude.toFixed(5)}`;
+			marker.bindPopup(popupContent).openPopup();
+
 			this.openAddCustomMarkerDialog(_latitude, _longitude, marker);
 
-			//on mouse events
-			// marker.on('mouseover', (e: L.LeafletMouseEvent) => {
-			// 	this.showCustomMarkerPopup(_latitude, _longitude, popupContent);
+			// marker.on('click', (e: L.LeafletMouseEvent) => {
+			// 	this.openAddCustomMarkerDialog(_latitude, _longitude, marker);
 			// });
-
-			marker.on('click', (e: L.LeafletMouseEvent) => {
-				this.openAddCustomMarkerDialog(_latitude, _longitude, marker);
-			});
 		});
 	}
 
-	showCustomMarkerPopup(latitude: number, longitude: number, content: string) {
-		L.popup({
-			offset: L.point(0, -20), // shift slightly above
-		})
-			.setLatLng([latitude, longitude])
-			.setContent(content)
-			.addTo(this.map);
-	}
-
-	getCustomMarkerList() {
+	getCustomMarkerListAndAddToMap() {
 		this.viewController.getMarkerList().subscribe({
 			next: (res) => {
 				this.customMarkerList = res;
@@ -455,6 +466,19 @@ export class ViewComponent implements OnInit {
 				}
 			},
 			error: (err) => {
+				console.error('Error in getCustomMarkerListAndAddToMap:', err);
+				this.toastr.error('Something went wrong');
+			}
+		});
+		return this.customMarkerList;
+	}
+
+	getCustomMarkerList() {
+		this.viewController.getMarkerList().subscribe({
+			next: (res) => {
+				this.customMarkerList = res;
+			},
+			error: (err) => {
 				console.error('Error in getCustomMarkerList:', err);
 				this.toastr.error('Something went wrong');
 			}
@@ -462,7 +486,7 @@ export class ViewComponent implements OnInit {
 		return this.customMarkerList;
 	}
 
-	getDrawingList() {
+	getDrawingListAndAddToMap() {
 		this.viewController.getDrawingList().subscribe({
 			next: (res) => {
 				this.drawingList = res;
@@ -481,6 +505,19 @@ export class ViewComponent implements OnInit {
 				}
 			},
 			error: (err) => {
+				console.error('Error in getDrawingListAndAddToMap:', err);
+				this.toastr.error('Something went wrong');
+			}
+		});
+		return this.drawingList;
+	}
+
+	getDrawingList() {
+		this.viewController.getDrawingList().subscribe({
+			next: (res) => {
+				this.drawingList = res;
+			},
+			error: (err) => {
 				console.error('Error in getDrawingList:', err);
 				this.toastr.error('Something went wrong');
 			}
@@ -491,6 +528,8 @@ export class ViewComponent implements OnInit {
 	deleteDrawing(id: number) {
 		this.viewController.deleteDrawing(id).subscribe({
 			next: (res) => {
+				const layer = this.drawingMap.get(id);
+				this.map.removeLayer(layer);
 				this.getDrawingList();
 			},
 			error: (err) => {
@@ -516,18 +555,15 @@ export class ViewComponent implements OnInit {
 					polygon.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`).openPopup(e.latlng);
 				});
 
-				polygon.on('click', (e: L.LeafletMouseEvent) => {
-					this.openDeleteDrawingDialog(id, shapeName, label, polygon);
-				});
-
-				// polygon.remove();  // Removes it from the map
-
+				this.drawingMap.set(id, polygon);
 
 			} else if (shapeName == 'POLYLINE') {
 				const polylineCoords = drawing.latlng.map((p: any) => [p.lat, p.lng]);
 
+				const group = L.featureGroup().addTo(this.map);
+
 				const polyline = L.polyline(polylineCoords, {
-				}).addTo(this.map);
+				}).addTo(this.map).addTo(group);
 
 				drawing.bearAndbackBearing.forEach((b: any, index: number) => {
 					const point1 = polylineCoords[index];
@@ -541,17 +577,14 @@ export class ViewComponent implements OnInit {
 							radius: 5,
 							// color: 'transparent',
 							fillOpacity: 0
-						}).addTo(this.map);
+						}).addTo(this.map).addTo(group);
 
 						popupMarker.on('mousemove', (e: L.LeafletMouseEvent) => {
 							popupMarker.bindPopup(`<b>${drawing.label}</b><br> Bearing: ${b.bearing}°<br>Back: ${b.backBearing}°`).openPopup(e.latlng);
 						});
 					}
 				});
-
-				polyline.on('click', (e: L.LeafletMouseEvent) => {
-					this.openDeleteDrawingDialog(id, shapeName, label, polyline);
-				});
+				this.drawingMap.set(id, group);
 
 			} else if (shapeName == 'CIRCLE') {
 				const firstPoint = drawing.latlng[0];
@@ -564,9 +597,7 @@ export class ViewComponent implements OnInit {
 					circle.bindPopup(`Label: ${drawing.label} <br> Area: ${drawing.area.toFixed(2)} km²`).openPopup(e.latlng);
 				});
 
-				circle.on('click', (e: L.LeafletMouseEvent) => {
-					this.openDeleteDrawingDialog(id, shapeName, label, circle);
-				});
+				this.drawingMap.set(id, circle);
 			}
 		});
 	}
@@ -600,35 +631,11 @@ export class ViewComponent implements OnInit {
 			if (result) {
 				console.log('Dialog result:', result);
 				this.addCustomMarker(result, marker);
-			}
-		});
-	}
+				this.markerMap.set(_latitude, marker);
 
-	openAddlabelDialog(jsonObj: any): void {
-		const dialogRef = this.dialog.open(AddLabelDialogComponent, {
-			width: '500px',
-			data: { label: '', jsonObj: jsonObj }
-		});
-
-		dialogRef.afterClosed().subscribe(result => {
-			if (result) {
-				console.log('Dialog result:', result);
-			}
-		});
-	}
-
-	openDeleteDrawingDialog(id: number, shapeName: string, label: string, layer: any): void {
-		const dialogRef = this.dialog.open(DeleteDrawingDialogComponent, {
-			width: '500px',
-			data: { id: id, shapeName: shapeName, label: label }
-		});
-
-		dialogRef.afterClosed().subscribe(result => {
-			if (result) {
-				console.log('Dialog result:', result);
-				if (layer instanceof L.Polygon || layer instanceof L.Polyline || layer instanceof L.Circle) {
-					this.map.removeLayer(layer);
-				}
+				this.getCustomMarkerList();
+			} else {
+				this.map.removeLayer(marker);
 			}
 		});
 	}
@@ -665,6 +672,10 @@ export class ViewComponent implements OnInit {
 	logoutFn() {
 		localStorage.removeItem('signUpID');
 		this.router.navigate(['/login']);
+	}
+
+	goBack(): void {
+		this.location.back();
 	}
 
 }

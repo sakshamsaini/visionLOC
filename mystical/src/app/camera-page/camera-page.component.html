@@ -1,0 +1,83 @@
+<div class="card cardOverwrite h100">
+    <div class="headerContainer">
+        <div class="headerLeftContainer">
+
+            <div class="pageTitle">Camera List</div>
+        </div>
+        <div class="headerRightContainer">
+            <button mat-button class="btn" style=" background-color: #00966c !important;"
+                (click)="openAddCameraDialog(null)">
+                Add Camera</button>
+            <button mat-button class="btn" style="background-color: #008CBA;" routerLink="/view-map"
+                [disabled]="isDisabled">
+                View Map</button>
+            <app-user-profile></app-user-profile>
+        </div>
+    </div>
+    <!-- <hr style="color:gray;background-color:gray"> -->
+
+    <table mat-table matSort #sort="matSort" matSortActive="id" matSortDirection="desc" matSortDisableClear
+        [dataSource]="dataSource">
+
+        <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header disableClear>
+                <div class="tableHeader"> Camera ID </div>
+            </th>
+
+            <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="label">
+            <th mat-header-cell *matHeaderCellDef>
+                <div class="tableHeader"> Label </div>
+            </th>
+            <td mat-cell *matCellDef="let row"> {{ row.label }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="latitude">
+            <th mat-header-cell *matHeaderCellDef>
+                <div class="tableHeader"> Latitude </div>
+            </th>
+            <td mat-cell *matCellDef="let row"> {{ row.latitude | number: '1.4-5' }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="longitude">
+            <th mat-header-cell *matHeaderCellDef>
+                <div class="tableHeader"> Longitude </div>
+            </th>
+            <td mat-cell *matCellDef="let row"> {{ row.longitude | number: '1.4-5' }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fovDeg">
+            <th mat-header-cell *matHeaderCellDef>
+                <div class="tableHeader"> Focal degree </div>
+            </th>
+            <td mat-cell *matCellDef="let row"> {{ row.fovDeg }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="focalLengthPx">
+            <th mat-header-cell *matHeaderCellDef>
+                <div class="tableHeader"> Focal length </div>
+            </th>
+            <td mat-cell *matCellDef="let row"> {{ row.focalLengthPx }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> </th>
+            <td mat-cell *matCellDef="let row">
+                <!-- <div class="float-end"> -->
+                <img src="assets/icons/edit.svg" class="icon" (click)="openAddCameraDialog(row.id)" />
+                <img src="assets/icons/delete.svg" class="icon" (click)="openDeleteDrawingDialog(row.id,row.label)" />
+                <!-- </div> -->
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell text-center" [attr.colspan]="displayedColumns.length">
+                No camera found
+            </td>
+        </tr>
+    </table>
+</div>

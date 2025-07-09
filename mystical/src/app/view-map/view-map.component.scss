@@ -76,3 +76,18 @@
     // margin-top: 5px;
     margin-right: 15px;
 }
+
+.full-height {
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+}
+
+.scroll-panel {
+    height: 100vh;           /* Viewport height */
+    overflow-y: auto;        /* Scroll when content overflows */
+    overflow-x: hidden;
+    border-left: 1px solid #ccc;
+    padding: 10px;
+    background: #f9f9f9;     /* Optional background */
+}

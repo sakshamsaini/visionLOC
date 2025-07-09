@@ -1,0 +1,21 @@
+<div class="user-icon" style="cursor: pointer;" (click)="toggleCard()" #triggerRef>
+    {{ initials }}
+</div>
+
+<div class="card-container" *ngIf="showCard" #cardRef>
+    <mat-card class="user-card">
+        <div class="user-info">
+            <div class="pt-3" style="margin-left: 90px;margin-bottom: 10px;">
+                <div class="user-icon">{{ initials }}</div>
+            </div>
+            <mat-card-content>
+                <span class="fw-bold">{{ user.name }}</span>
+                <br>
+                <span>{{ user.email }}</span>
+            </mat-card-content>
+        </div>
+
+        <mat-divider></mat-divider>
+        <div class="logout" (click)="logout()">Logout</div>
+    </mat-card>
+</div>

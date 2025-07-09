@@ -14,7 +14,9 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
 import { AuthInterceptor } from './auth.interceptor';
 import { ToastrModule } from 'ngx-toastr';
-
+import { MatSortModule } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
+import { MatDividerModule } from '@angular/material/divider';
 
 @NgModule({
 	declarations: [
@@ -34,6 +36,10 @@ import { ToastrModule } from 'ngx-toastr';
 		MatInputModule,
 		ReactiveFormsModule,
 		ToastrModule.forRoot(),
+		MatSortModule,
+		MatTableModule,
+		MatDividerModule
+
 	],
 	providers: [
 		{

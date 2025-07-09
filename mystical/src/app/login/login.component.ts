@@ -12,6 +12,7 @@ import { ToastrService } from 'ngx-toastr';
 export class LoginComponent implements OnInit {
 
 	loginForm: FormGroup;
+	hide = true;
 
 	constructor(
 		private fb: FormBuilder,
@@ -25,10 +26,10 @@ export class LoginComponent implements OnInit {
 			password: ['', Validators.required]
 		});
 
-		this.route.queryParams.subscribe(params => {
-			this.loginForm.get('userName')?.setValue(params['userName']);
-			this.loginForm.get('password')?.setValue(params['password']);
-		});
+		// this.route.queryParams.subscribe(params => {
+		// 	this.loginForm.get('userName')?.setValue(params['userName']);
+		// 	this.loginForm.get('password')?.setValue(params['password']);
+		// });
 	}
 
 	ngOnInit(): void {
@@ -40,13 +41,14 @@ export class LoginComponent implements OnInit {
 				.subscribe((res) => {
 					console.log(res)
 
-					if (res['response']) {
-						this.toastr.success(res['message']);
-						localStorage.setItem('signUpID', res['response'].id);
+					if (res.response) {
+						this.toastr.success(res.message);
+						localStorage.setItem('signUpID', res.response.id);
+						localStorage.setItem('user', JSON.stringify(res.response.user));
 
-						this.router.navigate(['/view-map']);
+						this.router.navigate(['/camera']);
 					} else {
-						this.toastr.error(res['message']);
+						this.toastr.error(res.message);
 					}
 				},
 					error => {

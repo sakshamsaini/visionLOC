@@ -12,6 +12,7 @@ import { ToastrService } from 'ngx-toastr';
 export class SignUpComponent implements OnInit {
 
 	signUpForm: FormGroup;
+	hide = true;
 
 	constructor(
 		private fb: FormBuilder,
@@ -33,11 +34,11 @@ export class SignUpComponent implements OnInit {
 		if (this.signUpForm.valid) {
 			this.loginController.signUp(this.signUpForm.value)
 				.subscribe((res) => {
-					this.toastr.success(res['message']);
-
-					this.router.navigate(['/login'], {
-						queryParams: { userName: this.signUpForm.value.email, password: this.signUpForm.value.password }
-					});
+					this.toastr.success(res.message);
+					this.router.navigate(['/login']);
+					// this.router.navigate(['/login'], {
+					// 	queryParams: { userName: this.signUpForm.value.email, password: this.signUpForm.value.password }
+					// });
 				},
 					error => {
 						console.log('error in onSubmit() -', error);

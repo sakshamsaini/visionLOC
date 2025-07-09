@@ -19,7 +19,8 @@
                     <mat-label class="fw-bold">Email</mat-label>
                     <input matInput formControlName="email" type="email" required />
 
-                    <mat-error *ngIf="signUpForm.get('email')?.hasError('required') && signUpForm.get('email')?.touched">
+                    <mat-error
+                        *ngIf="signUpForm.get('email')?.hasError('required') && signUpForm.get('email')?.touched">
                         Email is required.
                     </mat-error>
                     <mat-error *ngIf="signUpForm.get('email')?.hasError('email')">
@@ -29,7 +30,11 @@
 
                 <mat-form-field appearance="fill" class="full-width">
                     <mat-label class="fw-bold">Password</mat-label>
-                    <input matInput formControlName="password" type="text" required />
+                    <input matInput [type]="hide ? 'password' : 'text'" formControlName="password" required>
+                    <button mat-icon-button matSuffix (click)="hide = !hide" type="button">
+                        <img
+                            [src]="hide ? 'assets/icons/visibility_off_icon.png' : 'assets/icons/visibility_icon.png'" />
+                    </button>
 
                     <mat-error
                         *ngIf="signUpForm.get('password')?.hasError('required') && signUpForm.get('password')?.touched">
@@ -37,7 +42,7 @@
                     </mat-error>
                 </mat-form-field>
 
-                <button type="submit" [disabled]="signUpForm.invalid">Sign up</button>
+                <button type="submit" class="btn" [disabled]="signUpForm.invalid">Sign up</button>
             </form>
 
         </mat-card-content>

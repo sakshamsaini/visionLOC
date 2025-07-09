@@ -24,17 +24,21 @@ export class AddLabelDialogComponent implements OnInit {
 
 	onSave(): void {
 		this.data.jsonObj.label = this.data.label;
-		this.viewController.postDrawing(this.data.jsonObj)
-			.subscribe((res) => {
-				this.toastr.success(res['message']);
-			},
-				error => {
-					console.log('error in onSave() -', error);
-					this.toastr.error('Something went wrong');
-				});
 
-		this.dialogRef.close({
-			...this.data,
-		});
+		this.viewController.postDrawing(this.data.jsonObj).subscribe(
+			(res) => {
+				this.toastr.success(res.message);
+
+				this.dialogRef.close({
+					...this.data,
+					id: res.response.id
+				});
+			},
+			(error) => {
+				console.log('error in onSave() -', error);
+				this.toastr.error('Something went wrong');
+			}
+		);
 	}
+
 }
