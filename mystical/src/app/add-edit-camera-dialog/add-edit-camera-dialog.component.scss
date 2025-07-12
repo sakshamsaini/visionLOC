@@ -10,3 +10,8 @@
     font-size: medium;
     margin-right: 10px;
 }
+
+.disabled {
+    pointer-events: none;
+    opacity: 0.6;
+}

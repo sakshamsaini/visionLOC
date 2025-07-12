@@ -28,6 +28,11 @@ export class SignUpComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
+		const signupID = localStorage.getItem('signUpID')
+		if (signupID) {
+			this.router.navigate(['/camera']);
+			this.toastr.info("You're already signed up. Please log out to create a new account.");
+		}
 	}
 
 	onSubmit() {

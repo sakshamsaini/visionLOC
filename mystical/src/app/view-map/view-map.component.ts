@@ -2,12 +2,11 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { Location } from '@angular/common';
 import { ViewController } from '../controller/view.controller';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { AddCustomMarkerDialogComponent } from '../add-custom-marker-dialog/add-custom-marker-dialog.component';
 import { AddLabelDialogComponent } from '../add-label-dialog/add-label-dialog.component';
-import { marker } from 'leaflet';
+// import { marker } from 'leaflet';
 declare let L: any;
 
 @Component({
@@ -44,7 +43,6 @@ export class ViewMapComponent implements OnInit {
 		private dialog: MatDialog,
 		private router: Router,
 		private toastr: ToastrService,
-		private location: Location,
 		private viewController: ViewController,
 	) { }
 
@@ -619,6 +617,6 @@ export class ViewMapComponent implements OnInit {
 	}
 
 	goBack(): void {
-		this.location.back();
+		this.router.navigate(['/camera']);
 	}
 }
