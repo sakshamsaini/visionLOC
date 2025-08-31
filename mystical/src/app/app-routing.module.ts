@@ -4,9 +4,8 @@ import { AuthGuard } from './auth.guard';
 
 const routes: Routes = [
 	{
-		path: 'view-map',
-		loadChildren: () => import('./view-map/view-map.module').then(m => m.ViewMapModule),
-		canActivate: [AuthGuard]
+		path: '',
+		loadChildren: () => import('./login/login.module').then(m => m.LoginModule),
 	},
 	{
 		path: 'login',
@@ -15,6 +14,11 @@ const routes: Routes = [
 	{
 		path: 'sign-up',
 		loadChildren: () => import('./sign-up/sign-up.module').then(m => m.SignUpModule),
+	},
+	{
+		path: 'view-map',
+		loadChildren: () => import('./view-map/view-map.module').then(m => m.ViewMapModule),
+		canActivate: [AuthGuard]
 	},
 	{
 		path: 'camera',
